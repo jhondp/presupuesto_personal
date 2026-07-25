@@ -7,6 +7,7 @@ from fastapi import Depends
 from app.core.auth import Principal, get_current_principal
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
+from app.domain.debts import DebtScheduleError, build_schedule
 from app.domain.periods import PeriodConflictError
 
 
@@ -55,6 +56,14 @@ class FinanceGateway(Protocol):
     def get_entry(self, user_id: str, table: str, entry_id: str) -> dict[str, Any] | None: ...
     def update_entry(self, user_id: str, table: str, entry_id: str, fields: dict[str, Any]) -> dict[str, Any] | None: ...
 
+    # Debts
+    def create_debt(
+        self, user_id: str, bank: str, principal_minor: int, installment_minor: int, installment_count: int
+    ) -> dict[str, Any]: ...
+    def list_debts(self, user_id: str) -> list[dict[str, Any]]: ...
+    def get_debt(self, user_id: str, debt_id: str) -> dict[str, Any] | None: ...
+    def generate_debt_schedule(self, user_id: str, debt_id: str) -> list[dict[str, Any]] | None: ...
+
 
 def count_exported_rows(exported: dict[str, Any]) -> int:
     """Row count for an already-fetched export payload.
@@ -78,6 +87,9 @@ class InMemorySupabaseGateway:
         self._periods: dict[str, dict[str, Any]] = {}
         self._period_events: list[dict[str, Any]] = []
         self._entries: dict[str, dict[str, dict[str, Any]]] = {"income_entries": {}, "expense_entries": {}}
+        self._debts: dict[str, dict[str, Any]] = {}
+        self._installments: dict[str, dict[str, Any]] = {}
+        self._installments_by_key: dict[tuple[str, int], str] = {}
         self._next_id = 0
 
     def _new_id(self) -> str:
@@ -108,10 +120,10 @@ class InMemorySupabaseGateway:
             "income_entries": self.list_entries(user_id, "income_entries"),
             "expense_entries": self.list_entries(user_id, "expense_entries"),
             "budget_periods": self.list_periods(user_id),
-            # debts/debt_installments/alert_rules land in a later phase; kept
-            # here (empty) so the export key set matches EXPORT_TABLES.
-            "debts": [],
-            "debt_installments": [],
+            "debts": self.list_debts(user_id),
+            "debt_installments": self._list_installments(user_id),
+            # alert_rules lands in PR3B; kept here (empty) so the export key
+            # set matches EXPORT_TABLES.
             "alert_rules": [],
         }
 
@@ -122,6 +134,11 @@ class InMemorySupabaseGateway:
         self._period_events = [e for e in self._period_events if e["user_id"] != user_id]
         for table in self._entries:
             self._entries[table] = {eid: e for eid, e in self._entries[table].items() if e["user_id"] != user_id}
+        self._debts = {did: d for did, d in self._debts.items() if d["user_id"] != user_id}
+        self._installments_by_key = {
+            key: iid for key, iid in self._installments_by_key.items() if self._installments[iid]["user_id"] != user_id
+        }
+        self._installments = {iid: i for iid, i in self._installments.items() if i["user_id"] != user_id}
 
     # Categories
 
@@ -227,6 +244,67 @@ class InMemorySupabaseGateway:
             return None
         entry.update(fields)
         return dict(entry)
+
+    # Debts
+
+    def create_debt(
+        self, user_id: str, bank: str, principal_minor: int, installment_minor: int, installment_count: int
+    ) -> dict[str, Any]:
+        debt = {
+            "id": self._new_id(),
+            "user_id": user_id,
+            "bank": bank,
+            "principal_minor": principal_minor,
+            "installment_minor": installment_minor,
+            "installment_count": installment_count,
+            # Mirrors `created_at::date` on the real (timestamptz) column —
+            # only the date component is ever compared against.
+            "created_on": date.today(),
+        }
+        self._debts[debt["id"]] = debt
+        return dict(debt)
+
+    def list_debts(self, user_id: str) -> list[dict[str, Any]]:
+        return [dict(d) for d in self._debts.values() if d["user_id"] == user_id]
+
+    def get_debt(self, user_id: str, debt_id: str) -> dict[str, Any] | None:
+        debt = self._debts.get(debt_id)
+        return dict(debt) if debt and debt["user_id"] == user_id else None
+
+    def _list_installments(self, user_id: str) -> list[dict[str, Any]]:
+        return sorted(
+            (dict(i) for i in self._installments.values() if i["user_id"] == user_id),
+            key=lambda i: (i["debt_id"], i["ordinal"]),
+        )
+
+    def generate_debt_schedule(self, user_id: str, debt_id: str) -> list[dict[str, Any]] | None:
+        # Mirrors the SQL RPC's lock-then-resolve-then-insert-with-conflict-
+        # skip shape: ownership is re-checked here rather than trusting an
+        # earlier read, and an installment already present for (debt_id,
+        # ordinal) is left untouched, which is what makes repeat calls
+        # idempotent (see 0006_debt_schedule_and_alerts.sql).
+        debt = self._debts.get(debt_id)
+        if debt is None or debt["user_id"] != user_id:
+            return None
+        schedule = build_schedule(debt, self.list_periods(user_id))  # raises DebtScheduleError("no_later_period", ...)
+        for item in schedule:
+            key = (debt_id, item["ordinal"])
+            if key in self._installments_by_key:
+                continue
+            installment = {
+                "id": self._new_id(),
+                "user_id": user_id,
+                "debt_id": debt_id,
+                "ordinal": item["ordinal"],
+                "due_on": item["due_on"],
+                "amount_minor": item["amount_minor"],
+            }
+            self._installments[installment["id"]] = installment
+            self._installments_by_key[key] = installment["id"]
+        return sorted(
+            (dict(i) for i in self._installments.values() if i["debt_id"] == debt_id and i["user_id"] == user_id),
+            key=lambda i: i["ordinal"],
+        )
 
 
 class SupabaseGateway:
@@ -406,6 +484,55 @@ class SupabaseGateway:
         updates = {key: (value.isoformat() if key == "occurred_on" and value is not None else value) for key, value in fields.items()}
         response = self.client.table(table).update(updates).eq("id", entry_id).eq("user_id", user_id).execute()
         return response.data[0] if response.data else None
+
+    # Debts
+
+    def create_debt(
+        self, user_id: str, bank: str, principal_minor: int, installment_minor: int, installment_count: int
+    ) -> dict[str, Any]:
+        payload = {
+            "user_id": user_id,
+            "bank": bank,
+            "principal_minor": principal_minor,
+            "installment_minor": installment_minor,
+            "installment_count": installment_count,
+        }
+        response = self.client.table("debts").insert(payload).execute()
+        return response.data[0]
+
+    def list_debts(self, user_id: str) -> list[dict[str, Any]]:
+        return self.client.table("debts").select("*").eq("user_id", user_id).execute().data
+
+    def get_debt(self, user_id: str, debt_id: str) -> dict[str, Any] | None:
+        response = self.client.table("debts").select("*").eq("id", debt_id).eq("user_id", user_id).maybe_single().execute()
+        return response.data
+
+    @staticmethod
+    def _with_installment_date(row: dict[str, Any]) -> dict[str, Any]:
+        row = dict(row)
+        if isinstance(row.get("due_on"), str):
+            row["due_on"] = date.fromisoformat(row["due_on"])
+        return row
+
+    def generate_debt_schedule(self, user_id: str, debt_id: str) -> list[dict[str, Any]] | None:
+        # generate_debt_schedule (0006_debt_schedule_and_alerts.sql) is the
+        # server-authoritative, `security invoker`, row-locked schedule
+        # generator; this method only maps its exact `raise exception '...'`
+        # messages to the domain-layer errors/None the routes expect —
+        # mirrors _transition_period's exact-message matching above.
+        from postgrest.exceptions import APIError
+
+        try:
+            response = self.client.rpc("generate_debt_schedule", {"p_debt_id": debt_id}).execute()
+        except APIError as exc:
+            message = str(getattr(exc, "message", "") or exc)
+            if "debt_not_found" in message:
+                return None
+            if "no_later_period" in message:
+                raise DebtScheduleError("no_later_period", "No later budget period exists to anchor the schedule") from exc
+            raise
+        data = response.data or []
+        return [self._with_installment_date(row) for row in data]
 
 
 async def get_gateway(principal: Principal = Depends(get_current_principal), settings: Settings = Depends(get_settings)) -> FinanceGateway:
