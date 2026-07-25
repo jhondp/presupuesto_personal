@@ -24,7 +24,7 @@ Chain strategy: stacked-to-main
 | 1 | Auth, RLS, profile, account safety (done) | PR1 merged | `pytest tests/integration/test_profile.py` | Local Supabase two-user isolation | `api/app/core`, profile/account routes |
 | 2 | Categories, ledgers, periods (done) | PR2 merged | `pytest tests/unit tests/integration/test_ledgers.py` | Seeded API close/reopen + entry write | ledger/period routes and tables |
 | 3A | Debt schedule + installments (~700 LOC, done) | PR3A branch `pr3a-debts-backend` | `pytest tests/unit tests/integration/test_debts*.py` | Local Supabase: schedule generation twice, concurrently | `domain/debts.py`, `routes/debts.py`, `0006_*.sql` |
-| 3B | Insights + alert evaluation (~575 LOC) | PR3B (based on 3A) | `pytest tests/unit tests/integration/test_alerts*.py test_insights*.py` | Two-user rule isolation, GET-no-mutation check | `domain/alerts.py`, `routes/alert_rules.py`, `routes/insights.py` |
+| 3B | Insights + alert evaluation (~575 LOC, done) | PR3B branch `pr3b-alerts-insights` | `pytest tests/unit tests/integration/test_alerts*.py test_insights*.py` — 20 passed | Two-user rule isolation, GET-no-mutation check | `domain/alerts.py`, `routes/alert_rules.py`, `routes/insights.py` |
 | 3C | Web client, no build step (~1,400 LOC — exceeds 800-line budget by ~600, needs `size:exception` or further split) | PR3C (based on 3B) | Manual smoke; formal coverage in 3D | N/A — static assets only | `web/index.html`, `web/assets`, `web/src` |
 | 3D | Playwright E2E (~450 LOC) | PR3D (based on 3C) | `npx playwright test` | Seeded disposable Supabase stack | `web/tests/e2e/finance.spec.js` |
 | 3E | Docs + cleanup (~250 LOC) | PR3E → main | `pytest -v` + `npx playwright test` | Full-suite rerun | `api/README.md`, `docs/`, root `README.md` |
@@ -52,13 +52,13 @@ Chain strategy: stacked-to-main
 - [x] 3A.7 Register debts router in `api/app/main.py`; run test command from Unit 3A.
 
 ## Phase 3B: Insights + alerts backend
-- [ ] 3B.1 RED `api/tests/unit/test_alerts.py` — threshold compare, category-scoped `expense_total`, `debt_due` by `due_on` range.
-- [ ] 3B.2 RED integration — insights totals, alert firing/no-fire, cross-user RLS on `alert_rules`/installments, no state mutation on GET.
-- [ ] 3B.3 Implement `api/app/domain/alerts.py` — pure period aggregation, `>=` threshold evaluation.
-- [ ] 3B.4 Extend `supabase/migrations/0006_debt_schedule_and_alerts.sql` — add `alert_rules.label`, `kind in ('expense_total','debt_due')`, nullable `category_id` FK (no `is_enabled`/`period_id`/`last_triggered_at`).
-- [ ] 3B.5 Implement `api/app/routes/alert_rules.py` (`POST/GET /v1/alert-rules`, `DELETE /v1/alert-rules/{id}`) and `api/app/routes/insights.py` (`GET /v1/insights?period_id=`).
-- [ ] 3B.6 Extend `FinanceGateway` with alert/insight methods; extend `export_account`.
-- [ ] 3B.7 Register routers in `api/app/main.py`; run test command from Unit 3B.
+- [x] 3B.1 RED `api/tests/unit/test_alerts.py` — threshold compare, category-scoped `expense_total`, `debt_due` by `due_on` range.
+- [x] 3B.2 RED integration — insights totals, alert firing/no-fire, cross-user RLS on `alert_rules`/installments, no state mutation on GET.
+- [x] 3B.3 Implement `api/app/domain/alerts.py` — pure period aggregation, `>=` threshold evaluation.
+- [x] 3B.4 Extend `supabase/migrations/0006_debt_schedule_and_alerts.sql` — add `alert_rules.label`, `kind in ('expense_total','debt_due')`, nullable `category_id` FK (no `is_enabled`/`period_id`/`last_triggered_at`).
+- [x] 3B.5 Implement `api/app/routes/alert_rules.py` (`POST/GET /v1/alert-rules`, `DELETE /v1/alert-rules/{id}`) and `api/app/routes/insights.py` (`GET /v1/insights?period_id=`).
+- [x] 3B.6 Extend `FinanceGateway` with alert/insight methods; extend `export_account`.
+- [x] 3B.7 Register routers in `api/app/main.py`; run test command from Unit 3B.
 
 ## Phase 3C: Web client (no build step)
 - [ ] 3C.1 Create `web/index.html` — accessible app shell, nav, main region.

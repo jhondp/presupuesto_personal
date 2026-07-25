@@ -1,10 +1,12 @@
--- Phase 3A: deterministic, idempotent debt installment scheduling.
+-- Phase 3A+3B: deterministic, idempotent debt installment scheduling, plus
+-- the alert-rule columns query-time insight evaluation needs.
 -- `debts`, `debt_installments`, and `alert_rules` already exist with the
 -- corrected shape from 0001_baseline.sql (no `cadence_months`/`label`/`kind`/
--- `status` columns on debts; no `status` on debt_installments). This file
--- only adds the schedule-generation RPC; `alert_rules` gains its `label`/
--- `kind`/`category_id` columns in a later revision of this same file (PR3B),
--- per design.md's Phase 3 addendum.
+-- `status` columns on debts; no `status` on debt_installments). PR3A added
+-- the schedule-generation RPC below; PR3B (this revision) adds `alert_rules`
+-- `label`/`kind`/`category_id`, per design.md's Phase 3 addendum. New columns
+-- are added with a transient default and the default is then dropped, so
+-- this stays safe to apply even on a non-empty `alert_rules` table.
 
 begin;
 
@@ -72,5 +74,28 @@ begin
       order by ordinal;
 end;
 $$;
+
+-- Phase 3B: alert rules gain a label, a kind, and an optional category scope.
+-- `is_enabled`, `period_id`, and `last_triggered_at` are deliberately absent
+-- — see design.md's "Alert rule shape" decision (a GET-time evaluation must
+-- never mutate state to serve push-style dedup, and `period_id` is redundant
+-- with `GET /insights?period_id=` already scoping evaluation).
+alter table public.alert_rules
+  add column label text not null default 'Alert',
+  add column kind text not null default 'expense_total' check (kind in ('expense_total', 'debt_due')),
+  add column category_id uuid;
+
+alter table public.alert_rules alter column label drop default;
+alter table public.alert_rules alter column kind drop default;
+
+alter table public.alert_rules
+  add constraint alert_rules_label_length check (char_length(trim(label)) between 1 and 100);
+
+-- Ownership-aware composite FK (mirrors 0002_pr1_hardening.sql): a plain FK
+-- on category_id alone only proves the category exists, not that it belongs
+-- to this rule's own user_id.
+alter table public.alert_rules
+  add constraint alert_rules_category_owner_fkey
+    foreign key (user_id, category_id) references public.categories(user_id, id) on delete restrict;
 
 commit;

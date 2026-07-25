@@ -63,6 +63,14 @@ class FinanceGateway(Protocol):
     def list_debts(self, user_id: str) -> list[dict[str, Any]]: ...
     def get_debt(self, user_id: str, debt_id: str) -> dict[str, Any] | None: ...
     def generate_debt_schedule(self, user_id: str, debt_id: str) -> list[dict[str, Any]] | None: ...
+    def list_installments(self, user_id: str) -> list[dict[str, Any]]: ...
+
+    # Alert rules
+    def create_alert_rule(
+        self, user_id: str, label: str, kind: str, threshold_minor: int, category_id: str | None
+    ) -> dict[str, Any]: ...
+    def list_alert_rules(self, user_id: str) -> list[dict[str, Any]]: ...
+    def delete_alert_rule(self, user_id: str, rule_id: str) -> bool: ...
 
 
 def count_exported_rows(exported: dict[str, Any]) -> int:
@@ -90,6 +98,7 @@ class InMemorySupabaseGateway:
         self._debts: dict[str, dict[str, Any]] = {}
         self._installments: dict[str, dict[str, Any]] = {}
         self._installments_by_key: dict[tuple[str, int], str] = {}
+        self._alert_rules: dict[str, dict[str, Any]] = {}
         self._next_id = 0
 
     def _new_id(self) -> str:
@@ -121,10 +130,8 @@ class InMemorySupabaseGateway:
             "expense_entries": self.list_entries(user_id, "expense_entries"),
             "budget_periods": self.list_periods(user_id),
             "debts": self.list_debts(user_id),
-            "debt_installments": self._list_installments(user_id),
-            # alert_rules lands in PR3B; kept here (empty) so the export key
-            # set matches EXPORT_TABLES.
-            "alert_rules": [],
+            "debt_installments": self.list_installments(user_id),
+            "alert_rules": self.list_alert_rules(user_id),
         }
 
     def delete_account(self, user_id: str) -> None:
@@ -139,6 +146,7 @@ class InMemorySupabaseGateway:
             key: iid for key, iid in self._installments_by_key.items() if self._installments[iid]["user_id"] != user_id
         }
         self._installments = {iid: i for iid, i in self._installments.items() if i["user_id"] != user_id}
+        self._alert_rules = {rid: r for rid, r in self._alert_rules.items() if r["user_id"] != user_id}
 
     # Categories
 
@@ -271,7 +279,7 @@ class InMemorySupabaseGateway:
         debt = self._debts.get(debt_id)
         return dict(debt) if debt and debt["user_id"] == user_id else None
 
-    def _list_installments(self, user_id: str) -> list[dict[str, Any]]:
+    def list_installments(self, user_id: str) -> list[dict[str, Any]]:
         return sorted(
             (dict(i) for i in self._installments.values() if i["user_id"] == user_id),
             key=lambda i: (i["debt_id"], i["ordinal"]),
@@ -305,6 +313,32 @@ class InMemorySupabaseGateway:
             (dict(i) for i in self._installments.values() if i["debt_id"] == debt_id and i["user_id"] == user_id),
             key=lambda i: i["ordinal"],
         )
+
+    # Alert rules
+
+    def create_alert_rule(
+        self, user_id: str, label: str, kind: str, threshold_minor: int, category_id: str | None
+    ) -> dict[str, Any]:
+        rule = {
+            "id": self._new_id(),
+            "user_id": user_id,
+            "label": label,
+            "kind": kind,
+            "threshold_minor": threshold_minor,
+            "category_id": category_id,
+        }
+        self._alert_rules[rule["id"]] = rule
+        return dict(rule)
+
+    def list_alert_rules(self, user_id: str) -> list[dict[str, Any]]:
+        return [dict(r) for r in self._alert_rules.values() if r["user_id"] == user_id]
+
+    def delete_alert_rule(self, user_id: str, rule_id: str) -> bool:
+        rule = self._alert_rules.get(rule_id)
+        if rule is None or rule["user_id"] != user_id:
+            return False
+        del self._alert_rules[rule_id]
+        return True
 
 
 class SupabaseGateway:
@@ -533,6 +567,26 @@ class SupabaseGateway:
             raise
         data = response.data or []
         return [self._with_installment_date(row) for row in data]
+
+    def list_installments(self, user_id: str) -> list[dict[str, Any]]:
+        rows = self.client.table("debt_installments").select("*").eq("user_id", user_id).execute().data
+        return [self._with_installment_date(row) for row in rows]
+
+    # Alert rules
+
+    def create_alert_rule(
+        self, user_id: str, label: str, kind: str, threshold_minor: int, category_id: str | None
+    ) -> dict[str, Any]:
+        payload = {"user_id": user_id, "label": label, "kind": kind, "threshold_minor": threshold_minor, "category_id": category_id}
+        response = self.client.table("alert_rules").insert(payload).execute()
+        return response.data[0]
+
+    def list_alert_rules(self, user_id: str) -> list[dict[str, Any]]:
+        return self.client.table("alert_rules").select("*").eq("user_id", user_id).execute().data
+
+    def delete_alert_rule(self, user_id: str, rule_id: str) -> bool:
+        response = self.client.table("alert_rules").delete().eq("id", rule_id).eq("user_id", user_id).execute()
+        return bool(response.data)
 
 
 async def get_gateway(principal: Principal = Depends(get_current_principal), settings: Settings = Depends(get_settings)) -> FinanceGateway:

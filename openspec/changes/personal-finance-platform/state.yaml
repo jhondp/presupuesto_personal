@@ -27,7 +27,6 @@ tasks_progress:
     - 3A.5
     - 3A.6
     - 3A.7
-  pending:
     - 3B.1
     - 3B.2
     - 3B.3
@@ -35,6 +34,7 @@ tasks_progress:
     - 3B.5
     - 3B.6
     - 3B.7
+  pending:
     - 3C.1
     - 3C.2
     - 3C.3

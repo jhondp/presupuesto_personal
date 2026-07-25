@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.core.errors import ApiError, error_response
-from app.routes import account, categories, debts, expenses, income, periods, profile
+from app.routes import account, alert_rules, categories, debts, expenses, income, insights, periods, profile
 
 
 def create_app() -> FastAPI:
@@ -35,6 +35,8 @@ def create_app() -> FastAPI:
     app.include_router(income.router, prefix="/v1")
     app.include_router(expenses.router, prefix="/v1")
     app.include_router(debts.router, prefix="/v1")
+    app.include_router(alert_rules.router, prefix="/v1")
+    app.include_router(insights.router, prefix="/v1")
     return app
 
 
