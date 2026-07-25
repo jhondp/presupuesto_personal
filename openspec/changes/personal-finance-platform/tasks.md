@@ -32,10 +32,10 @@ Chain strategy: stacked-to-main
 - [x] 1.5 Implement `profile` and `account` routes plus profile defaults, export, deletion, and limit guard; refactor shared DTO validation.
 
 ## Phase 2: Ledgers and periods
-- [ ] 2.1 RED: unit/integration tests for non-overlapping periods, no-period rejection, close/reopen preservation, stale `If-Match`, and closed-write rejection.
-- [ ] 2.2 Implement period rules/routes/events and versioned period mutation in `domain/periods.py`, `routes/periods.py`, and migration RPCs.
-- [ ] 2.3 RED: test owner-only categories, archival retaining historic entries, blocked new assignment, valid income totals, and separate expense rows.
-- [ ] 2.4 Implement typed categories and separate income/expense routes, tables, and ownership-aware validation; refactor shared ledger DTOs.
+- [x] 2.1 RED: unit/integration tests for non-overlapping periods, no-period rejection, close/reopen preservation, stale `If-Match`, and closed-write rejection.
+- [x] 2.2 Implement period rules/routes/events and versioned period mutation in `domain/periods.py`, `routes/periods.py`, and migration RPCs.
+- [x] 2.3 RED: test owner-only categories, archival retaining historic entries, blocked new assignment, valid income totals, and separate expense rows.
+- [x] 2.4 Implement typed categories and separate income/expense routes, tables, and ownership-aware validation; refactor shared ledger DTOs.
 
 ## Phase 3: Debts, insights, and client
 - [ ] 3.1 RED: unit/RPC tests for next-period installment dates, absent-later-period 409, duplicate-free repeated generation, and threshold alerts.
