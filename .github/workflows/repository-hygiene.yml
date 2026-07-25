@@ -17,7 +17,26 @@ jobs:
       - name: Detect whitespace errors
         run: git diff --check "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
-      # TODO: Add formatter, lint, test, and security/data-boundary commands only
-      # after the project declares its application stack and documents matching local checks.
-      - name: Application checks not configured
-        run: echo "No application stack or test runner is configured yet."
+  api-tests:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - name: Check out proposed change
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e '.[dev]'
+
+      # No SUPABASE_TEST_* secrets are configured here, so the disposable RLS
+      # suite in test_supabase_rls.py stays skipped by design (see api/README.md)
+      # and only the in-memory/mocked unit-level tests run.
+      - name: Run tests
+        run: python -m pytest -v

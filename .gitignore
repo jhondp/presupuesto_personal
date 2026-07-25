@@ -1,5 +1,6 @@
 .atl/
 example/Finanzas Personales 2026.xlsx
+.claude/settings.json
 
 api/.venv/
 api/.pytest_cache/
