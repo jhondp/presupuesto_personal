@@ -27,7 +27,7 @@ Chain strategy: stacked-to-main
 | 3B | Insights + alert evaluation (~575 LOC, done) | PR3B branch `pr3b-alerts-insights` | `pytest tests/unit tests/integration/test_alerts*.py test_insights*.py` — 20 passed | Two-user rule isolation, GET-no-mutation check | `domain/alerts.py`, `routes/alert_rules.py`, `routes/insights.py` |
 | 3C | Web client, no build step (~1,400 LOC, done — `size:exception` approved) | PR3C branch `pr3c-web-client` | Manual smoke (`node --check` all modules, passing); formal coverage in 3D | N/A — static assets only | `web/index.html`, `web/assets`, `web/src` |
 | 3D | Playwright E2E (~450 LOC, done) | PR3D branch `pr3d-e2e-tests` | `npx playwright test` — 8 skipped (harness unconfigured in this sandbox; discovery/fixtures verified) | Seeded disposable Supabase stack (no Docker daemon available here) | `web/tests/e2e/finance.spec.js` |
-| 3E | Docs + cleanup (~250 LOC) | PR3E → main | `pytest -v` + `npx playwright test` | Full-suite rerun | `api/README.md`, `docs/`, root `README.md` |
+| 3E | Docs + cleanup (~250 LOC, done) | PR3E branch `pr3e-docs` → main | `pytest -v` (77 passed, 3 skipped) + `npx playwright test` (8 skipped) | Full-suite rerun | `api/README.md`, `docs/`, root `README.md` |
 
 ## Phase 1: Foundation
 - [x] 1.1 Create `api/pyproject.toml`, app factory, config, stable errors, JWT verification, request-scoped Supabase gateway.
@@ -77,11 +77,11 @@ Chain strategy: stacked-to-main
 - [x] 3D.3 `npx playwright test` run in this sandbox (chromium installed): all 8 correctly skip closed (no harness env configured) rather than failing against nothing — confirms discovery, fixture wiring, and the fail-closed gate all work; full execution needs the harness from 3E's setup doc.
 
 ## Phase 3E: Documentation
-- [ ] 3E.1 Update `api/README.md` — migrations 0004–0006, RPC auth flow.
-- [ ] 3E.2 Create `docs/phase-3-setup.md` — local Supabase, seed script, configured limits, export/recovery.
-- [ ] 3E.3 Update root `README.md` — workbook is reference-only, never imported/deployed.
-- [ ] 3E.4 Update `.gitignore` — Playwright reports, `.env.local`.
-- [ ] 3E.5 Run `pytest -v` (api) and `npx playwright test` (web).
+- [x] 3E.1 Update `api/README.md` — migrations 0004–0006, RPC auth flow.
+- [x] 3E.2 Create `docs/phase-3-setup.md` — local Supabase, seed script, configured limits, export/recovery.
+- [x] 3E.3 Create root `README.md` — workbook is reference-only, never imported/deployed.
+- [x] 3E.4 Update `.gitignore` — Playwright reports, `.env.local`.
+- [x] 3E.5 Run `pytest -v` (api) — 77 passed, 3 skipped (opt-in disposable-Supabase harness); `npx playwright test` (web) — 8 skipped (opt-in E2E harness, no live stack in this sandbox).
 
 ## Notes / Decisions Needed
 - PR3C (~1,400 LOC) exceeds the 800-line budget by ~600; needs `size:exception` approval or a further split (auth+state+forms / views+dashboard) before apply.

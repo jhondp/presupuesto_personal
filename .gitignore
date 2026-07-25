@@ -6,3 +6,11 @@ api/.venv/
 api/.pytest_cache/
 api/**/__pycache__/
 api/.env
+
+# Web client (Phase 3): no build step, but the Playwright E2E harness and
+# local dev tooling still produce local-only artifacts.
+web/node_modules/
+web/test-results/
+web/playwright-report/
+web/.env.local
+web/**/.env.local

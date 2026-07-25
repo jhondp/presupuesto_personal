@@ -46,10 +46,10 @@ tasks_progress:
     - 3D.1
     - 3D.2
     - 3D.3
-  pending:
     - 3E.1
     - 3E.2
     - 3E.3
     - 3E.4
     - 3E.5
+  pending: []
 last_updated: 2026-07-25
