@@ -1,0 +1,9 @@
+# Local-only deployment config if a maintainer copies index.html's inline
+# __ENV__ block into a separate file for convenience; never commit real
+# Supabase URLs/keys here even though the anon key is browser-safe.
+.env.local
+
+# Playwright output (added in PR3D)
+node_modules/
+test-results/
+playwright-report/

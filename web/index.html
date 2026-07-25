@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personal Finance</title>
+  <!--
+    Deployment-time configuration (Supabase URL/anon key, API base URL) is
+    injected here as a plain global before any module runs — there is no
+    build step to bake in env vars. Never put a service-role key here; only
+    the anon key and the FastAPI base URL are safe for the browser.
+  -->
+  <script>
+    window.__ENV__ = {
+      SUPABASE_URL: "",
+      SUPABASE_ANON_KEY: "",
+      API_BASE_URL: "http://localhost:8000",
+    };
+  </script>
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="app-header">
+    <h1 class="app-title">Personal Finance</h1>
+    <nav class="app-nav" aria-label="Primary" hidden>
+      <a href="#/dashboard" data-route="dashboard">Dashboard</a>
+      <a href="#/income" data-route="income">Income</a>
+      <a href="#/expenses" data-route="expenses">Expenses</a>
+      <a href="#/periods" data-route="periods">Periods</a>
+      <a href="#/debts" data-route="debts">Debts</a>
+      <button type="button" id="sign-out-button" hidden>Sign out</button>
+    </nav>
+  </header>
+
+  <main id="main-content" tabindex="-1">
+    <section id="auth-view" aria-labelledby="auth-heading">
+      <h2 id="auth-heading">Sign in</h2>
+      <form id="auth-form" novalidate>
+        <div class="field">
+          <label for="auth-email">Email</label>
+          <input id="auth-email" name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="auth-password">Password</label>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit">Sign in</button>
+        <p id="auth-error" class="error-text" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="app-view" hidden>
+      <div id="view-root"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

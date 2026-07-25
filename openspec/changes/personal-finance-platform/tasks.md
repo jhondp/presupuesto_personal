@@ -25,7 +25,7 @@ Chain strategy: stacked-to-main
 | 2 | Categories, ledgers, periods (done) | PR2 merged | `pytest tests/unit tests/integration/test_ledgers.py` | Seeded API close/reopen + entry write | ledger/period routes and tables |
 | 3A | Debt schedule + installments (~700 LOC, done) | PR3A branch `pr3a-debts-backend` | `pytest tests/unit tests/integration/test_debts*.py` | Local Supabase: schedule generation twice, concurrently | `domain/debts.py`, `routes/debts.py`, `0006_*.sql` |
 | 3B | Insights + alert evaluation (~575 LOC, done) | PR3B branch `pr3b-alerts-insights` | `pytest tests/unit tests/integration/test_alerts*.py test_insights*.py` — 20 passed | Two-user rule isolation, GET-no-mutation check | `domain/alerts.py`, `routes/alert_rules.py`, `routes/insights.py` |
-| 3C | Web client, no build step (~1,400 LOC — exceeds 800-line budget by ~600, needs `size:exception` or further split) | PR3C (based on 3B) | Manual smoke; formal coverage in 3D | N/A — static assets only | `web/index.html`, `web/assets`, `web/src` |
+| 3C | Web client, no build step (~1,400 LOC, done — `size:exception` approved) | PR3C branch `pr3c-web-client` | Manual smoke (`node --check` all modules, passing); formal coverage in 3D | N/A — static assets only | `web/index.html`, `web/assets`, `web/src` |
 | 3D | Playwright E2E (~450 LOC) | PR3D (based on 3C) | `npx playwright test` | Seeded disposable Supabase stack | `web/tests/e2e/finance.spec.js` |
 | 3E | Docs + cleanup (~250 LOC) | PR3E → main | `pytest -v` + `npx playwright test` | Full-suite rerun | `api/README.md`, `docs/`, root `README.md` |
 
@@ -61,15 +61,15 @@ Chain strategy: stacked-to-main
 - [x] 3B.7 Register routers in `api/app/main.py`; run test command from Unit 3B.
 
 ## Phase 3C: Web client (no build step)
-- [ ] 3C.1 Create `web/index.html` — accessible app shell, nav, main region.
-- [ ] 3C.2 Create `web/assets/styles.css` — ledger/period/debt/dashboard layouts.
-- [ ] 3C.3 Create `web/src/auth.js` (Supabase login/logout/session recovery) and `web/src/api.js` (JWT header, error mapping).
-- [ ] 3C.4 Create `web/src/state.js` — categories/periods/entries/debts/alerts, localStorage sync.
-- [ ] 3C.5 Create `web/src/views/income.js` and `expenses.js` — entry form/list/edit, minor units.
-- [ ] 3C.6 Create `web/src/views/periods.js` — create/list/close/reopen with `If-Match`.
-- [ ] 3C.7 Create `web/src/views/debts.js` — create debt, trigger `/schedule`, read-only installment list (no payment-status field exists on `debt_installments`).
-- [ ] 3C.8 Create `web/src/views/dashboard.js` — summary stats, debt-due summary, active alerts from `/v1/insights`.
-- [ ] 3C.9 Wire router/nav in `web/index.html`; manual smoke test.
+- [x] 3C.1 Create `web/index.html` — accessible app shell, nav, main region.
+- [x] 3C.2 Create `web/assets/styles.css` — ledger/period/debt/dashboard layouts.
+- [x] 3C.3 Create `web/src/auth.js` (Supabase login/logout/session recovery) and `web/src/api.js` (JWT header, error mapping).
+- [x] 3C.4 Create `web/src/state.js` — categories/periods/entries/debts/alerts, localStorage sync.
+- [x] 3C.5 Create `web/src/views/income.js` and `expenses.js` — entry form/list/edit, minor units.
+- [x] 3C.6 Create `web/src/views/periods.js` — create/list/close/reopen with `If-Match`.
+- [x] 3C.7 Create `web/src/views/debts.js` — create debt, trigger `/schedule`, read-only installment list (no payment-status field exists on `debt_installments`).
+- [x] 3C.8 Create `web/src/views/dashboard.js` — summary stats, debt-due summary, active alerts from `/v1/insights`.
+- [x] 3C.9 Wire router/nav in `web/index.html` (via `web/src/app.js`); manual smoke test = `node --check` on every module (all pass); formal browser coverage lands in PR3D.
 
 ## Phase 3D: Playwright E2E
 - [ ] 3D.1 Create `web/tests/e2e/finance.spec.js` + auth fixture (login, clear state).
