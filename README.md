@@ -22,14 +22,40 @@ repository.** Spreadsheet import/workbook parity is an explicit non-goal
 | 2 | Categories, separate income/expense ledgers, budget period lifecycle (create/close/reopen with optimistic concurrency) |
 | 3 | Debt schedules (deterministic monthly cadence, idempotent generation), query-time insights/alerts, the web client, and Playwright E2E coverage |
 
-## Getting started
+## Getting started (Quick Start)
 
-- API: see `api/README.md` for local setup, migrations, and running tests.
-- Phase 3 specifics (debt schedules, alerts, the web client, and the
-  Playwright E2E harness): see `docs/phase-3-setup.md`.
-- SDD artifacts (proposal, specs, design, tasks) live under
-  `openspec/changes/personal-finance-platform/` while a change is in
-  progress, and are merged into `openspec/specs/` once archived.
+**First time? Run this:**
+
+```bash
+cd scripts
+./setup-local.sh
+```
+
+This will guide you through:
+1. Entering Supabase credentials (free tier is fine)
+2. Installing Python dependencies
+3. Applying database migrations
+4. Configuring the web client
+
+Then start the app:
+
+```bash
+cd scripts
+./run-local.sh
+```
+
+Open `http://localhost:4173` → Sign up → enjoy!
+
+**Full details**: see `scripts/README.md` for troubleshooting, manual setup, and more.
+
+---
+
+## Full Documentation
+
+- **Local setup & tests**: `api/README.md`
+- **Phase 3 specifics** (debts, alerts, web, E2E): `docs/phase-3-setup.md`
+- **Quick scripts guide**: `scripts/README.md`
+- **SDD artifacts** (proposal, specs, design, tasks): `openspec/changes/personal-finance-platform/`
 
 ## Non-goals
 
