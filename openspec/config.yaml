@@ -1,0 +1,32 @@
+schema: spec-driven
+
+context: |
+  Project: presupuesto_personal
+  Planned stack: vanilla HTML/CSS/ES modules, FastAPI, Supabase Auth/PostgreSQL
+  Architecture: modular API with database-enforced ownership and consistency
+  Testing: no runner currently detected; planned pytest, local Supabase integration, and Playwright E2E
+  Persistence: hybrid Engram plus OpenSpec files
+  Strict TDD: disabled until a test runner is introduced
+
+rules:
+  proposal:
+    - Keep scope aligned with the workbook-informed product intent and document rollback for risky changes.
+  specs:
+    - Use Given/When/Then scenarios and RFC 2119 keywords.
+    - Preserve ownership isolation, currency, period, debt, and privacy requirements.
+  design:
+    - Document architecture decisions, security boundaries, and rationale.
+  tasks:
+    - Group work by phase and keep tasks independently reviewable.
+    - Respect the planned chained-PR split when implementation begins.
+  apply:
+    guidelines:
+      - Follow the design and existing project conventions.
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas.

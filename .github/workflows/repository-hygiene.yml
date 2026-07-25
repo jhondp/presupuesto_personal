@@ -1,0 +1,23 @@
+name: Repository hygiene
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diff-check:
+    name: Check diff whitespace
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out proposed change
+        uses: actions/checkout@v4
+
+      - name: Detect whitespace errors
+        run: git diff --check "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+      # TODO: Add formatter, lint, test, and security/data-boundary commands only
+      # after the project declares its application stack and documents matching local checks.
+      - name: Application checks not configured
+        run: echo "No application stack or test runner is configured yet."
