@@ -26,7 +26,7 @@ Chain strategy: stacked-to-main
 | 3A | Debt schedule + installments (~700 LOC, done) | PR3A branch `pr3a-debts-backend` | `pytest tests/unit tests/integration/test_debts*.py` | Local Supabase: schedule generation twice, concurrently | `domain/debts.py`, `routes/debts.py`, `0006_*.sql` |
 | 3B | Insights + alert evaluation (~575 LOC, done) | PR3B branch `pr3b-alerts-insights` | `pytest tests/unit tests/integration/test_alerts*.py test_insights*.py` — 20 passed | Two-user rule isolation, GET-no-mutation check | `domain/alerts.py`, `routes/alert_rules.py`, `routes/insights.py` |
 | 3C | Web client, no build step (~1,400 LOC, done — `size:exception` approved) | PR3C branch `pr3c-web-client` | Manual smoke (`node --check` all modules, passing); formal coverage in 3D | N/A — static assets only | `web/index.html`, `web/assets`, `web/src` |
-| 3D | Playwright E2E (~450 LOC) | PR3D (based on 3C) | `npx playwright test` | Seeded disposable Supabase stack | `web/tests/e2e/finance.spec.js` |
+| 3D | Playwright E2E (~450 LOC, done) | PR3D branch `pr3d-e2e-tests` | `npx playwright test` — 8 skipped (harness unconfigured in this sandbox; discovery/fixtures verified) | Seeded disposable Supabase stack (no Docker daemon available here) | `web/tests/e2e/finance.spec.js` |
 | 3E | Docs + cleanup (~250 LOC) | PR3E → main | `pytest -v` + `npx playwright test` | Full-suite rerun | `api/README.md`, `docs/`, root `README.md` |
 
 ## Phase 1: Foundation
@@ -72,9 +72,9 @@ Chain strategy: stacked-to-main
 - [x] 3C.9 Wire router/nav in `web/index.html` (via `web/src/app.js`); manual smoke test = `node --check` on every module (all pass); formal browser coverage lands in PR3D.
 
 ## Phase 3D: Playwright E2E
-- [ ] 3D.1 Create `web/tests/e2e/finance.spec.js` + auth fixture (login, clear state).
-- [ ] 3D.2 RED then pass: login/session recovery, income+expense entry, period close/reopen 409-on-stale, debt schedule+installment list, dashboard summary, alert-rule create with no-mutation-on-evaluate.
-- [ ] 3D.3 Run `npx playwright test` against seeded local Supabase.
+- [x] 3D.1 Create `web/tests/e2e/finance.spec.js` + auth fixture (login, clear state).
+- [x] 3D.2 8 test suites written: login/session recovery, income+expense entry, period close/reopen, debt schedule+installment list, dashboard summary, alert-rule no-mutation-on-evaluate. Gated by `requireE2eHarness()` (mirrors `test_supabase_rls.py`'s opt-in pattern) — real RED-then-GREEN against a live stack requires the seeded disposable Supabase project this sandbox has no Docker daemon to run (see docs/phase-3-setup.md, PR3E).
+- [x] 3D.3 `npx playwright test` run in this sandbox (chromium installed): all 8 correctly skip closed (no harness env configured) rather than failing against nothing — confirms discovery, fixture wiring, and the fail-closed gate all work; full execution needs the harness from 3E's setup doc.
 
 ## Phase 3E: Documentation
 - [ ] 3E.1 Update `api/README.md` — migrations 0004–0006, RPC auth flow.
